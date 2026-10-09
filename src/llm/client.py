@@ -36,25 +36,37 @@ def call_openrouter(
     user_prompt: str
 ) -> str:
 
-    if not OPENROUTER_API_KEY:
+    # Read at call time (not only at import time) so the key is
+    # found regardless of import order vs .env loading.
+    api_key = (
+        os.getenv("OPENROUTER_API_KEY")
+        or OPENROUTER_API_KEY
+    )
+
+    model = (
+        os.getenv("OPENROUTER_MODEL")
+        or OPENROUTER_MODEL
+    )
+
+    if not api_key:
         raise ValueError(
             "OPENROUTER_API_KEY is missing"
         )
 
-    if not OPENROUTER_MODEL:
+    if not model:
         raise ValueError(
             "OPENROUTER_MODEL is missing"
         )
 
     headers = {
         "Authorization": (
-            f"Bearer {OPENROUTER_API_KEY}"
+            f"Bearer {api_key}"
         ),
         "Content-Type": "application/json",
     }
 
     payload = {
-        "model": OPENROUTER_MODEL,
+        "model": model,
 
         "messages": [
             {

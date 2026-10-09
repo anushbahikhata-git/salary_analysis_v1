@@ -39,5 +39,3 @@ print(
         "cam_result"
     )
 )
-
-#test comment

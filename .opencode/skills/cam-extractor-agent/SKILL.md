@@ -164,10 +164,10 @@ Propose before coding (1 short paragraph + tool list):
 
 ### 3. Implement (current architecture, Oct 2026)
 
-- Reasoning layer lives IN `src/extraction/cam_extraction.py`
-  (`normalize_company` / `resolve_company`, `calibrated_confidence`,
-  `build_agent_result`) wired into `analyze_transactions`. Deterministic
-  tools in the same module are untouched.
+- Shared toolkit lives in `src/extraction/cam_tools.py` (constants,
+  transaction tools, company/confidence reasoning). `cam_extraction.py`
+  is a thin backward-compatible wrapper for legacy callers. New code
+  imports ONLY `cam_tools`, never the legacy extractor.
 - Agent orchestration lives in `src/agents/cam_agent.py` (`CamAgent.run`):
   owns chain selection, staleness detection, and graph-ready state fragments.
 - LLM discovery (Option B, live Oct 2026): the model receives normalized

@@ -152,6 +152,8 @@ def build_final_response(
     credit_result: Optional[dict] = None,
     credit_decision: Optional[dict] = None,
     income_agent: Optional[dict] = None,
+    review: Optional[dict] = None,
+    agent_meta: Optional[dict] = None,
 ) -> dict:
     """
     Build the final public API response.
@@ -270,5 +272,68 @@ def build_final_response(
                 credit_decision
             )
         )
+
+    # ---------------------------------------------------------
+    # REVIEW
+    # ---------------------------------------------------------
+    #
+    # Additive and optional: present only when the CAM agent
+    # graph routed the chain through deterministic review.
+    # Explains Income=None cases where the gatekeeper accepted
+    # but review rejected, and carries staleness notes.
+    # Existing keys are never altered by this block.
+    #
+    # ---------------------------------------------------------
+
+    if review is not None:
+
+        response["review"] = {
+            "passed": review.get(
+                "passed",
+                True,
+            ),
+            "flags": review.get(
+                "flags",
+                [],
+            ),
+            "notes": review.get(
+                "notes",
+                [],
+            ),
+        }
+
+    # ---------------------------------------------------------
+    # AGENT PROVENANCE
+    # ---------------------------------------------------------
+    #
+    # Additive and optional: describes how the CamAgent reached
+    # its verdict (model vs rule fallback, calibrated confidence,
+    # staleness). Existing keys are never altered by this block.
+    #
+    # ---------------------------------------------------------
+
+    if agent_meta is not None:
+
+        meta = {
+            "confidence": agent_meta.get(
+                "confidence",
+            ),
+            "stale": agent_meta.get(
+                "stale",
+                False,
+            ),
+            "stale_gap_days": agent_meta.get(
+                "stale_gap_days",
+            ),
+            "discovery": agent_meta.get(
+                "discovery",
+                "rules",
+            ),
+        }
+
+        if agent_meta.get("llm_error") is not None:
+            meta["llm_error"] = agent_meta["llm_error"]
+
+        response["agent_meta"] = meta
 
     return response

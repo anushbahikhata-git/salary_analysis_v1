@@ -27,8 +27,8 @@ from src.response.response_builder import (
     build_final_response,
 )
 
-from src.graph.income_graph import (
-    income_graph,
+from src.graph.cam_graph import (
+    cam_graph,
 )
 
 
@@ -185,6 +185,13 @@ async def credit_assessment(
     # Income Agent decision
     income_agent = None
 
+    # CAM graph validation + review (agent pipeline)
+    validation = None
+    review_info = None
+
+    # CamAgent provenance (confidence, staleness, discovery)
+    agent_meta = None
+
     # Credit result
     credit_result = None
 
@@ -307,23 +314,23 @@ async def credit_assessment(
         try:
 
             # ------------------------------------------------
-            # Run the complete Income Graph.
+            # Run the CAM agent graph.
             #
             # Graph:
             #
             # CAM
             #  ↓
-            # Extractor
+            # CamAgent (extract + reasoning)
             #  ↓
             # Candidate
             #  ↓
-            # Income Agent
+            # Assess -> [Review?] -> Income Agent
             #  ↓
             # Validation
             #
             # ------------------------------------------------
 
-            income_graph_result = income_graph.invoke(
+            cam_graph_result = cam_graph.invoke(
                 {
                     "cam_path": str(cam_path),
                 }
@@ -333,7 +340,7 @@ async def credit_assessment(
             # Get complete extractor result
             # ------------------------------------------------
 
-            cam_result = income_graph_result.get(
+            cam_result = cam_graph_result.get(
                 "cam_result",
                 {},
             )
@@ -342,7 +349,7 @@ async def credit_assessment(
             # Get Income Agent decision
             # ------------------------------------------------
 
-            income_agent = income_graph_result.get(
+            income_agent = cam_graph_result.get(
                 "income_decision",
             )
 
@@ -356,6 +363,70 @@ async def credit_assessment(
                 }
 
             # ------------------------------------------------
+            # Get graph validation + review
+            # ------------------------------------------------
+            #
+            # Validation already folds in the review outcome:
+            # a review-rejected chain validates False even when
+            # the gatekeeper accepted it.
+            #
+            # ------------------------------------------------
+
+            validation = cam_graph_result.get(
+                "validation",
+            )
+
+            review_candidate = cam_graph_result.get(
+                "review",
+            )
+
+            if (
+                isinstance(review_candidate, dict)
+                and review_candidate.get(
+                    "needed",
+                    False,
+                ) is True
+            ):
+
+                review_info = review_candidate
+
+            # ------------------------------------------------
+            # Map the CamAgent response metadata
+            # ------------------------------------------------
+            #
+            # Provenance for the salary verdict: calibrated
+            # confidence, staleness, and whether the model or
+            # the rule fallback found the chain.
+            #
+            # ------------------------------------------------
+
+            agent_meta = {
+                "confidence": cam_graph_result.get(
+                    "confidence",
+                ),
+                "stale": bool(
+                    cam_graph_result.get(
+                        "is_stale",
+                        False,
+                    )
+                ),
+                "stale_gap_days": cam_graph_result.get(
+                    "stale_gap_days",
+                ),
+                "discovery": cam_graph_result.get(
+                    "discovery",
+                    "rules",
+                ),
+            }
+
+            llm_error = cam_graph_result.get(
+                "llm_error",
+            )
+
+            if llm_error is not None:
+                agent_meta["llm_error"] = llm_error
+
+            # ------------------------------------------------
             # IMPORTANT GATE
             # ------------------------------------------------
             #
@@ -364,7 +435,7 @@ async def credit_assessment(
             # The agent only decides whether that extractor
             # result is valid salary income.
             #
-            # TRUE:
+            # TRUE (agent detected AND graph validated):
             #     pass extractor result forward
             #
             # FALSE:
@@ -372,10 +443,26 @@ async def credit_assessment(
             #
             # ------------------------------------------------
 
-            if income_agent.get(
+            agent_detected = income_agent.get(
                 "detected",
                 False,
-            ) is True:
+            ) is True
+
+            # Missing validation preserves the legacy behavior
+            # (gatekeeper decides alone); an explicit False
+            # (e.g. review rejection) blocks the salary even
+            # when the gatekeeper accepted it.
+
+            review_ok = (
+                True
+                if not isinstance(validation, dict)
+                else validation.get(
+                    "valid",
+                    True,
+                ) is True
+            )
+
+            if agent_detected and review_ok:
 
                 salary_result = cam_result
 
@@ -621,4 +708,17 @@ async def credit_assessment(
         # ----------------------------------------------------
 
         income_agent=income_agent,
+
+        # ----------------------------------------------------
+        # Review (only present when the graph routed the
+        # chain through deterministic review)
+        # ----------------------------------------------------
+
+        review=review_info,
+
+        # ----------------------------------------------------
+        # Agent provenance (confidence, staleness, discovery)
+        # ----------------------------------------------------
+
+        agent_meta=agent_meta,
     )
