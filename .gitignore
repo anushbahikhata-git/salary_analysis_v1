@@ -1,0 +1,27 @@
+
+# Secrets
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv/
+venv/
+
+# Local editor settings
+.vscode/
+
+# Office lock files (e.g. ~$report.xlsx)
+~$*
+
+# Uploaded / generated files
+data/input/*
+data/output/*
+data/temp/*
+!data/input/.gitkeep
+!data/output/.gitkeep
+!data/temp/.gitkeep
