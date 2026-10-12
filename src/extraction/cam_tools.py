@@ -1,10 +1,9 @@
 """Shared CAM toolkit: constants, deterministic transaction tools,
 company resolution and confidence calibration.
 
-Neutral home for the logic used by both the legacy extractor
-(`cam_extraction`, backward compatibility) and the agent pipeline
-(`agents.cam_agent`, `graph.cam_graph`). Nothing here imports the
-agent or the graphs, so the dependency direction is one-way.
+Used by the agent pipeline (`agents.cam_agent`, `graph.cam_graph`).
+Nothing here imports the agent or the graphs, so the dependency
+direction is one-way.
 """
 
 from pathlib import Path

@@ -15,8 +15,7 @@ with an agent. Do NOT use for small bug fixes to the current extractor.
 ## Non-negotiable contracts
 
 Read these files first, in order:
-
-1. `src/extraction/cam_extraction.py` — current logic to replace (**canonical**)
+1. do end to end credit analysis
 2. `src/graph/income_graph.py` — `extract_cam_node` calls `analyze_monthly_counterparty(cam_path)`
 3. `src/graph/state.py` — `cam_result` shape
 4. `src/main.py` — expects `probable_salary.latest_salary` (fallback `salary`), `monthly_average_balance`

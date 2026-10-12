@@ -216,14 +216,14 @@ async def credit_assessment(
             )
 
         if not cam_file.filename.lower().endswith(
-            (".xlsx", ".xls")
+            (".xlsx", ".xls", ".json")
         ):
 
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "CAM must be an Excel file "
-                    "(.xlsx or .xls)."
+                    "CAM must be an Excel or JSON file "
+                    "(.xlsx, .xls or .json)."
                 ),
             )
 
@@ -267,14 +267,14 @@ async def credit_assessment(
             )
 
         if not credit_file.filename.lower().endswith(
-            (".pdf", ".xlsx", ".xls")
+            (".pdf", ".json")
         ):
 
             raise HTTPException(
                 status_code=400,
                 detail=(
                     "Credit report must be "
-                    "PDF, XLSX or XLS."
+                    "PDF or JSON."
                 ),
             )
 
